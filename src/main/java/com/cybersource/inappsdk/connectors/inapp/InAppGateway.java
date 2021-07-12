@@ -32,7 +32,7 @@ class InAppGateway extends SDKGateway implements TransactionResultReceiver.Recei
     @Override
     protected boolean performEncryption(SDKTransactionObject transactionObject, SDKApiConnectionCallback applicationConnectionCallback) {
         if(transactionInProgress)
-            return transactionInProgress;
+            return true;
         if (transactionObject == null)
             return false;
 
@@ -41,8 +41,6 @@ class InAppGateway extends SDKGateway implements TransactionResultReceiver.Recei
         this.connectionCallback = applicationConnectionCallback;
         InAppEncryptEnvelope envelope = new InAppEncryptEnvelope(transactionObject, merchantId,
                 messageSignature);
-        if (envelope == null)
-            return false;
         InAppConnectionService.startActionConnect(InAppSDKApiClient.getContext().get(), envelope, resultReceiver);
         return transactionInProgress;
     }

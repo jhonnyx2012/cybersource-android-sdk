@@ -2,44 +2,22 @@ package com.cybersource.inappsdk.common.utils;
 
 import android.text.TextUtils;
 
-import com.cybersource.inappsdk.common.SDKCore;
 import com.cybersource.inappsdk.common.SDKCurrency;
 
-import org.apache.http.conn.ssl.SSLSocketFactory;
-
-
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.net.Socket;
 import java.net.URL;
-import java.net.UnknownHostException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.List;
 import java.util.Scanner;
 import java.util.TimeZone;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 
 /**
  * This class provides static common methods to be used by other classes in the
@@ -49,9 +27,6 @@ import javax.net.ssl.X509TrustManager;
  */
 
 public class SDKUtils {
-
-	private final static String CERTIFICATES = "certificates";
-	private final static String CERT_EXT = ".cer";
 
 	/** Format of 'date': yyyy-MM-dd */
 	private final static String DATE_FORMAT = "yyyy-MM-dd";
@@ -209,30 +184,10 @@ public class SDKUtils {
 		return result;
 	}
 
-	/**
-	 * @return List of all available certificates from Assets of application
-	 *         which uses this SDK.
-	 */
-	private static List<String> getCertificates() {
-		List<String> certificates = new ArrayList<String>();
-		try {
-			String[] files = SDKCore.getContext().get().getAssets().list(CERTIFICATES);
-			for (String string : files) {
-				if (string.endsWith(CERT_EXT)) {
-					certificates.add(CERTIFICATES + "/" + string);
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return certificates;
-	}
-	
 	public static HttpsURLConnection getHttpsURLConnection(String urlString, String requestMethod, boolean doOutput)
 			throws IOException {
 		URL url = new URL(urlString);
 		HttpsURLConnection urlConnection = (HttpsURLConnection)url.openConnection();
-		urlConnection.setSSLSocketFactory(getSSLSocketFactory());
 		if (requestMethod != null) {
 			urlConnection.setRequestMethod(requestMethod);
 		}
@@ -242,152 +197,6 @@ public class SDKUtils {
 		urlConnection.setDoInput(true);
 		//android.util.Log.d("VMposUtils", "Connection: " + requestMethod + " -to- " + urlString);
 		return urlConnection;
-	}
-
-	/**
-	 * @return SSLSocketFactory which contains all available certificates from
-	 *         APP Assets.
-	 */
-	public static javax.net.ssl.SSLSocketFactory getSSLSocketFactory() {
-		try {
-			// loading default keystore
-			KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-			keyStore.load(null, null);
-
-			// loading all available certificates
-			int alias = 0;
-			for (String certificate : getCertificates()) {
-				CertificateFactory cf = CertificateFactory.getInstance("X.509");
-				InputStream caInput = new BufferedInputStream(SDKCore.getContext().get().getAssets().open(certificate));
-				Certificate ca;
-				try {
-					ca = cf.generateCertificate(caInput);
-				} finally {
-					caInput.close();
-				}
-				keyStore.setCertificateEntry(String.valueOf(alias), ca);
-				alias++;
-			}
-
-			// adding TrustManager
-			String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
-			TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
-			tmf.init(keyStore);
-
-			// creating SSLContext for a SSLSocketFactory
-			SSLContext sslContext = SSLContext.getInstance("TLS");
-			
-			// use custom trust manager for Android OS <= 2.3.5
-			if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.GINGERBREAD_MR1) {
-				
-				TrustManager[] trustManagers = tmf.getTrustManagers();
-				
-				if (trustManagers != null && trustManagers.length > 0) {
-	
-					final X509TrustManager origTrustmanager = (X509TrustManager)tmf.getTrustManagers()[0];
-	
-					TrustManager[] wrappedTrustManagers = new TrustManager[] { new X509TrustManager() {
-						public X509Certificate[] getAcceptedIssuers() {
-							return origTrustmanager.getAcceptedIssuers();
-						}
-	
-						public void checkClientTrusted(X509Certificate[] certs, String authType) {
-							try {
-								origTrustmanager.checkClientTrusted(certs, authType);
-							} catch (CertificateException e) {
-							}
-						}
-	
-						public void checkServerTrusted(X509Certificate[] certs, String authType)
-								throws CertificateException {
-							try {
-								origTrustmanager.checkServerTrusted(certs, authType);
-							} catch (Exception ex) {
-							}
-						}
-					} };
-					
-					trustManagers = wrappedTrustManagers;
-				}
-				sslContext.init(null, trustManagers, null);
-				
-			} else {
-				
-				sslContext.init(null, tmf.getTrustManagers(), null);
-			}
-
-			return sslContext.getSocketFactory();
-		} catch (Exception e) {
-			// returning 'null' if something goes wrong
-			return null;
-		}
-	}
-
-/*	public static HttpClient getHttpClientWithSSLSupport() {
-		try {
-			KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-			trustStore.load(null, null);
-
-			SSLSocketFactory sf = new MySSLSocketFactory(trustStore);
-			sf.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-
-
-			HttpParams params = new BasicHttpParams();
-			params.setParameter(ConnManagerPNames.MAX_TOTAL_CONNECTIONS, CONNECTION_ATTEPTS);
-			params.setParameter(ConnManagerPNames.MAX_CONNECTIONS_PER_ROUTE, new ConnPerRouteBean(CONNECTION_ATTEPTS));
-			params.setParameter(HttpProtocolParams.USE_EXPECT_CONTINUE, false);
-			HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
-			HttpProtocolParams.setContentCharset(params, HTTP.UTF_8);
-			HttpConnectionParams.setConnectionTimeout(params, CONNECTION_TIMEOUT);
-			HttpConnectionParams.setSoTimeout(params, RECIEVE_DATA_TIMEOUT);
-
-			SchemeRegistry registry = new SchemeRegistry();
-			registry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), PORT_80));
-			registry.register(new Scheme("https", sf, PORT_443));
-
-			ClientConnectionManager ccm = new ThreadSafeClientConnManager(params, registry);
-
-			return new DefaultHttpClient(ccm, params);
-		} catch (Exception e) {
-			return new DefaultHttpClient();
-		}
-	}*/
-
-	private static class MySSLSocketFactory extends SSLSocketFactory {
-		SSLContext sslContext = SSLContext.getInstance("TLS");
-
-		public MySSLSocketFactory(KeyStore truststore) throws NoSuchAlgorithmException, KeyManagementException,
-				KeyStoreException, UnrecoverableKeyException {
-			super(truststore);
-
-			TrustManager tm = new X509TrustManager() {
-				@Override
-				public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-				}
-
-				@Override
-				public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-				}
-
-				@Override
-				public X509Certificate[] getAcceptedIssuers() {
-					return null;
-				}
-			};
-
-			sslContext.init(null, new TrustManager[] { tm }, null);
-		}
-
-		@Override
-		public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException,
-				UnknownHostException {
-			return sslContext.getSocketFactory().createSocket(socket, host, port, autoClose);
-		}
-
-		@Override
-		public Socket createSocket() throws IOException {
-			return sslContext.getSocketFactory().createSocket();
-		}
 	}
 
 	/**
@@ -413,22 +222,6 @@ public class SDKUtils {
 		fix = hexString.toString();
 		return fix;
 	}
-
-	/**
-	 * Converts <code>List< NameValuePair ></code> into url-like String
-	 * 
-	 * @param list
-	 * @return url-like String
-	 */
-/*	public static String nameValuePairToString(List<NameValuePair> list) {
-		String result = " ";
-
-		for (NameValuePair pair : list) {
-			result += pair.getName() + "=" + pair.getValue() + "?";
-		}
-
-		return result.substring(0, result.length() - 1);
-	}*/
 	
 	/**
 	 * Converts Strings to BigInteger and checks if the first one is bigger than the
@@ -472,10 +265,6 @@ public class SDKUtils {
                 return null;
         }
     }
-
-/*	public static String convertToNameValuePair(List<Pair<String, String>> nvpPair) {
-		HashMap<SDKCyberSourceNameValuePair>
-	}*/
 
     /**
      * Convert BigDecimal amount value to String to send to the Gateway

@@ -17,6 +17,7 @@ import com.cybersource.inappsdk.connectors.inapp.receivers.TransactionResultRece
 import com.cybersource.inappsdk.connectors.inapp.responses.InAppResponseObject;
 import com.cybersource.inappsdk.datamodel.SDKGatewayErrorMapping;
 import com.cybersource.inappsdk.datamodel.response.SDKGatewayResponse;
+import com.cybersource.inappsdk.datamodel.response.SDKGatewayResponseType;
 import com.cybersource.inappsdk.soap.connection.SDKConnectionConstants;
 import com.cybersource.inappsdk.soap.parser.SDKSoapParser;
 
@@ -87,15 +88,14 @@ public class InAppConnectionService extends IntentService {
         if (intent != null) {
             final String action = intent.getAction();
 
-            switch (action){
-                case ACTION_CONNECT:
-                    final InAppBaseEnvelope envelope = (InAppBaseEnvelope)
-                            intent.getSerializableExtra(EXTRA_PARAM_ENVELOPE);
-                    final ResultReceiver resultReceiver =
-                            intent.getParcelableExtra(EXTRA_PARAM_CONNECTION_RESULT_RECEIVER);
-                    Object result = handleActionConnect(envelope);
-                    onPostHandleAction(result, resultReceiver);
-                    break;
+            if (ACTION_CONNECT.equals(action)) {
+                final InAppBaseEnvelope envelope = (InAppBaseEnvelope)
+                        intent.getSerializableExtra(EXTRA_PARAM_ENVELOPE);
+                final ResultReceiver resultReceiver =
+                        intent.getParcelableExtra(EXTRA_PARAM_CONNECTION_RESULT_RECEIVER);
+                assert envelope != null;
+                Object result = handleActionConnect(envelope);
+                onPostHandleAction(result, resultReceiver);
             }
         }
     }
@@ -105,7 +105,7 @@ public class InAppConnectionService extends IntentService {
      * parameters.
      */
     private Object handleActionConnect(InAppBaseEnvelope envelope) {
-        Object resultObject = null;
+        Object resultObject;
         String url = InAppConnectionData.PAYMENTS_CURRENT_URL;
         try {
 
@@ -130,8 +130,7 @@ public class InAppConnectionService extends IntentService {
                         || result.reasonCode.equals(REASON_CODE_DISCOUNTED_OK)) { // -- Faizan -- Added this line since the server has a code
                     // for discounted successful transaction as: 120
 
-                    SDKGatewayResponse response = result.convertToGatewayResponse();
-                    resultObject = response;
+                    resultObject = result.convertToGatewayResponse();
 
                 } else {
                     SDKGatewayError error = SDKGatewayErrorMapping.getGatewayError(result.reasonCode);
@@ -143,8 +142,7 @@ public class InAppConnectionService extends IntentService {
                     resultObject = error;
                 }
             } else if (responseCode == HttpsURLConnection.HTTP_INTERNAL_ERROR) {
-                SDKError error = envelope.parseGatewayError(urlConnection.getErrorStream());
-                resultObject = error;
+                resultObject = envelope.parseGatewayError(urlConnection.getErrorStream());
             } else {
                 SDKError error = SDKInternalError.SDK_INTERNAL_ERROR_NETWORK_CONNECTION;
                 error.setErrorExtraMessage(String.valueOf(responseCode));
@@ -169,12 +167,8 @@ public class InAppConnectionService extends IntentService {
         if (result instanceof SDKGatewayResponse) {
             SDKGatewayResponse response = (SDKGatewayResponse)result;
             resultData.putParcelable(SERVICE_RESULT_RESPONSE_KEY, response);
-            switch (response.getType()) {
-                case SDK_ENCRYPTION:
-                    resultReceiver.send(SERVICE_RESULT_CODE_SDK_RESPONSE, resultData);
-                    break;
-                default:
-                    break;
+            if (response.getType() == SDKGatewayResponseType.SDK_ENCRYPTION) {
+                resultReceiver.send(SERVICE_RESULT_CODE_SDK_RESPONSE, resultData);
             }
         } else if (result instanceof SDKError) {
             SDKError response = (SDKError)result;

@@ -7,7 +7,7 @@ package com.cybersource.inappsdk.soap.model;
  */
 public class SDKXMLTextNode extends SDKXMLNode {
 
-	private String value;
+	private final String value;
 
 	/**
 	 * Creates a new XML Element.
@@ -26,34 +26,4 @@ public class SDKXMLTextNode extends SDKXMLNode {
 	public String getValue() {
 		return value;
 	}
-
-/*	protected SDKXMLTextNode(Parcel in){
-		readFromParcel(in);
-	}
-
-	@Override
-	public void writeToParcel(Parcel dest, int flags) {
-		super.writeToParcel(dest, flags);
-		dest.writeString(value);
-	}
-
-	@Override
-	public void readFromParcel(Parcel in) {
-		super.readFromParcel(in);
-		value = in.readString();
-	}
-
-	public static final Parcelable.Creator<SDKXMLAttribute> CREATOR = new Parcelable.Creator<SDKXMLAttribute>() {
-
-		@Override
-		public SDKXMLAttribute createFromParcel(Parcel in) {
-			return new SDKXMLAttribute(in);
-		}
-
-		@Override
-		public SDKXMLAttribute[] newArray(int size) {
-			return new SDKXMLAttribute[size];
-		}
-	};*/
-
 }

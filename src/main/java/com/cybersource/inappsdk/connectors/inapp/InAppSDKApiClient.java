@@ -26,7 +26,7 @@ public class InAppSDKApiClient {
     public enum Api {API_ENCRYPTION}
 
     private InAppSDKApiClient(Builder builder) {
-        this.context = builder.context;
+        context = builder.context;
         SDKCore.initialize(builder.context);
         this.environment = builder.environment;
         this.merchantID = builder.merchantID;
@@ -86,12 +86,10 @@ public class InAppSDKApiClient {
             throw new NullPointerException("Invalid Message Signature");
 
         InAppGateway.getGateway().setMessageSignature(messageSignature);
-        switch (api){
-            case API_ENCRYPTION:
-                return InAppGateway.getGateway().performEncryption(transactionObject, this.connectionCallback);
-            default:
-                return false;
+        if (api == Api.API_ENCRYPTION) {
+            return InAppGateway.getGateway().performEncryption(transactionObject, this.connectionCallback);
         }
+        return false;
     }
 
     public static class Builder {

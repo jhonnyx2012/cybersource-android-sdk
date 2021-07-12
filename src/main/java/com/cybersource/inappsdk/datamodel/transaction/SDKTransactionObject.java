@@ -17,9 +17,6 @@ public abstract class SDKTransactionObject {
 	protected SDKCardData cardData;
 	protected SDKBillTo billTo;
 
-	SDKTransactionObject(Builder builder) {
-	}
-
     SDKTransactionObject() {
     }
 
@@ -50,17 +47,10 @@ public abstract class SDKTransactionObject {
 	/**
 	 * A factory method for creating proper transaction object.
 	 * 
-	 * @param type transaction type
 	 * @return one of transaction objects
 	 */
-	public static SDKTransactionObject.Builder createTransactionObject(SDKTransactionType type) {
-
-		switch (type) {
-			case SDK_TRANSACTION_ENCRYPTION:
-                return new SDKEncryptTransactionObject.Builder();
-            default:
-                return new SDKEncryptTransactionObject.Builder();
-        }
+	public static SDKTransactionObject.Builder createTransactionObject() {
+		return new SDKEncryptTransactionObject.Builder();
 	}
 
     public static abstract class Builder {
