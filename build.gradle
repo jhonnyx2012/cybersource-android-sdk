@@ -1,62 +1,27 @@
-apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'com.jfrog.bintray'
-
-ext {
-    bintrayRepo = 'maven'
-    bintrayName = 'cybersource-inapp-android'
-
-    publishedGroupId = 'com.cybersource'
-    libraryName = 'CYBSInAppSDK'
-    artifact = 'cybersource-inapp-android'
-
-    libraryDescription = 'InApp CyberSource Enterprise SDK to integrate services within an Android app'
-
-    siteUrl = 'https://github.com/AuthorizeNet/cybersource-android-sdk'
-    gitUrl = 'https://github.com/AuthorizeNet/cybersource-android-sdk.git'
-
-    libraryVersion = '1.0.0'
-    localReleaseDest = "${buildDir}/release/${libraryVersion}"
-
-    developerId = 'fezzubair'
-    developerName = 'Faizan Zubair'
-    developerEmail = 'faizan@visa.com'
-
-    licenseName = 'The MIT License (MIT)'
-    licenseUrl = 'https://opensource.org/licenses/MIT'
-    allLicenses = ["MIT"]
+buildscript {
+    repositories {
+        mavenCentral()
+        google()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:4.2.0'
+    }
 }
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+    }
+}
+
+apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 30
-
-    defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 30
-        versionCode 1
-        versionName "1.0"
-    }
-    buildTypes {
-        release {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-    testOptions {
-        unitTests {
-            returnDefaultValues = true
-        }
-    }
 }
 
-group = publishedGroupId // Maven Group ID for the artifact
-version = libraryVersion
-
-// Bintray
-Properties properties = new Properties()
-properties.load(project.rootProject.file('local.properties').newDataInputStream())
-
-dependencies {
-    implementation 'commons-codec:commons-codec:1.11'
-    implementation 'junit:junit:4.13.2'
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
