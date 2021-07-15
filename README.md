@@ -4,6 +4,21 @@ This SDK provides simple functionality to dispatch sensitive credit card data di
 
 **_NOTE: this SDK is not intended for AndroidPay transactions but rather is complimentary to the Google AndroidPay SDK.  The payment data blobs from this SDK and the Google AndroidPay SDK can be treated just the same for CyberSource payment processing._**
 
+## Generate AAR File
+
+This module is of type aar, which allows us to easily generate an aar file. After cloning the repository we need to rebuild the project:
+
+```
+Build -> Rebuilt Project
+```
+
+
+With this the .aar file will be generated in the following folder location
+
+```
+build -> outputs -> aar -> cybersource-android-sdk-release.aar
+```
+
 ## SDK Installation
 
 Android Studio is preferred because Eclipse will not be supported by Google much longer.
